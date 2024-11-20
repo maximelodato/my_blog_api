@@ -1,5 +1,6 @@
 class ArticlesController < ApplicationController
-  before_action :set_article, only: %i[ show update destroy ]
+  before_action :set_article, only: %i[show update destroy]
+  before_action :authorize_user!, only: %i[update destroy]
 
   # GET /articles
   def index
@@ -15,7 +16,6 @@ class ArticlesController < ApplicationController
       render json: @article
     end
   end
-  
 
   # POST /articles
   def create
@@ -38,24 +38,25 @@ class ArticlesController < ApplicationController
 
   # DELETE /articles/1
   def destroy
-    @article.destroy!
+    @article.destroy
+    head :no_content
   end
 
   private
 
-    def authorize_user!
-      render json: { error: 'Non autorisé' }, status: :unauthorized unless @article.user == current_user
-      enddef authorize_user!
-      render json: { error: 'Non autorisé' }, status: :unauthorized unless @article.user == current_user
-    end
+  # Vérifie que l'utilisateur connecté est l'auteur de l'article
+  def authorize_user!
+    render json: { error: 'Non autorisé' }, status: :unauthorized unless @article.user == current_user
+  end
 
-    # Use callbacks to share common setup or constraints between actions.
-    def set_article
-      @article = Article.find(params[:id])
-    end
+  # Récupère l'article en fonction de l'ID fourni
+  def set_article
+    @article = Article.find_by(id: params[:id])
+    render json: { error: 'Article introuvable' }, status: :not_found unless @article
+  end
 
-    # Only allow a list of trusted parameters through.
-    def article_params
-      params.require(:article).permit(:title, :content)
-    end
+  # Filtre les paramètres autorisés
+  def article_params
+    params.require(:article).permit(:title, :content, :private)
+  end
 end
